@@ -15,7 +15,7 @@ def get_model(args, data=None):
         clf uses a MLP for the final classification
     '''
     model = {}
-    if args.dataset[:5] == 'MNIST':
+    if args.dataset[:5] == 'MNIST' or 'AAI' in args.dataset:
         if args.dataset == 'MNIST':
             model['ebd'] = CNN(include_fc=True, hidden_dim=args.hidden_dim).cuda()
         else:

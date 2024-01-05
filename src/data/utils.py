@@ -8,6 +8,7 @@ from data.beer import BeerReview
 from data.bird import Bird
 from data.ask2me import ASK2ME
 from data.celeba import Celeba
+from data.aai_minist import AAIMNIST
 
 
 class EnvSampler(Sampler):
@@ -71,6 +72,12 @@ def is_textdata(dataset):
 
 def get_dataset(data_name, is_target=None, vocab=None):
     os.makedirs('./datasets', exist_ok=True)
+
+    if "AAIMNIST" in data_name:
+        data = AAIMNIST('./datasets/mnist/MNIST/processed_data', data_config=data_name[9:],
+                            target=is_target)
+        return data
+
     if 'MNIST' in data_name:
         data = ColoredMNIST('./datasets/mnist', data_config=data_name[6:],
                             target=is_target)
