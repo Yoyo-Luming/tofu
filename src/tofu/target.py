@@ -267,6 +267,7 @@ def evaluate_target_model(data, model, args, test_env_id):
               f'{colored("worst acc", "yellow")} {test_res["acc"]:.4f} '
               f'{colored("avg acc", "yellow")} {test_res["acc"]:.4f} '
               f'{colored("loss", "blue")} {test_res["loss"]:.4f} ')
+    return test_res['acc']
         
 def save_test_model(model, args, data_path, save_path):
     print()
