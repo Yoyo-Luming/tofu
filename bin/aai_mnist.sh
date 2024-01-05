@@ -9,4 +9,6 @@ python src/main.py \
     --transfer_ebd \
     --lr 0.001 \
     --weight_decay 0.01 \
-    --patience 5
+    --patience 5 \
+    --num_epochs 1000 \
+    --hidden_dim 300 

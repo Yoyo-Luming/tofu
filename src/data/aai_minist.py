@@ -48,8 +48,8 @@ class AAIMNIST(Dataset):
             data=self.data['test2'], start_ratio=0, end_ratio=1, add_color=True))
 
         # 需要保存测试结果的测试集
-        self.envs.append(self.create_env(
-            data=self.data['test'], start_ratio=0, end_ratio=1))
+        # self.envs.append(self.create_env(
+        #     data=self.data['test'], start_ratio=0, end_ratio=1))
 
         self.length = sum([len(env['idx_list']) for env in self.envs])
 

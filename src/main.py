@@ -96,6 +96,24 @@ if __name__ == '__main__':
 
     print_args(args)
 
+    load_model = False
+    if load_model:
+        print("load model")
+        # load model
+        device = torch.device(f'cuda:{args.cuda}') 
+        model_name = "tofu+CNN"
+        save_path = './save/' + model_name + '/'
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+        model = {}
+        model['ebd'] = torch.load(save_path + model_name +'_ebd.pth').to(device)
+        model['clf'] = torch.load(save_path + model_name +'_clf.pth').to(device)
+        
+        # 保存测试结果
+        data_path = './datasets/mnist/MNIST/processed_data/test/'
+        tofu.save_test_model(model, args, data_path, save_path)
+        exit(0)
+
     #################################################################
     #
     # Step 1: Identify spurious correlations from the source tasks
@@ -179,15 +197,19 @@ if __name__ == '__main__':
 
     # save model
     model_name = "tofu+CNN"
-    save_path = './save' + model_name +'.pth'
-    torch.save(model, save_path)
+    save_path = './save/' + model_name + '/'
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    torch.save(model['ebd'], save_path + model_name +'_ebd.pth')
+    torch.save(model['clf'], save_path + model_name +'_clf.pth')
 
-    # evaluate the robust performance on the test1 data
+    # evaluate the robust performance on the test1 data, env=3
     tofu.evaluate_target_model(tar_data, model, args, test_env_id=3)
 
-    # evaluate the robust performance on the test2 data
+    # evaluate the robust performance on the test2 data, env=4
     tofu.evaluate_target_model(tar_data, model, args, test_env_id=4)
     
-    
-    tofu.evaluate_model(tar_data, model, args)
+    # 保存测试结果
+    data_path = './datasets/mnist/MNIST/processed_data/test/'
+    tofu.save_test_model(model, args, data_path, save_path)
 

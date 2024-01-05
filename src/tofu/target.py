@@ -4,6 +4,7 @@
 import copy
 from datetime import datetime
 from collections import Counter
+import os
 
 import torch
 import numpy as np
@@ -217,8 +218,8 @@ def evaluate_target_model(data, model, args, test_env_id):
     test_env = test_env_id
 
     print()
-    print("{} Evaluating on the test environment for {}".format(
-        datetime.now().strftime('%02y/%02m/%02d %H:%M:%S'),
+    print("{} Evaluating on the test environment{} for {}".format(
+        datetime.now().strftime('%02y/%02m/%02d %H:%M:%S'), test_env_id-2,
         args.dataset), flush=True)
 
     test_loader = DataLoader(
@@ -239,3 +240,55 @@ def evaluate_target_model(data, model, args, test_env_id):
               f'{colored("worst acc", "yellow")} {test_res["acc"]:.4f} '
               f'{colored("avg acc", "yellow")} {test_res["acc"]:.4f} '
               f'{colored("loss", "blue")} {test_res["loss"]:.4f} ')
+
+def evaluate_target_model(data, model, args, test_env_id):
+    test_env = test_env_id
+
+    print()
+    print("{} Evaluating on the test environment{} for {}".format(
+        datetime.now().strftime('%02y/%02m/%02d %H:%M:%S'), test_env_id-2,
+        args.dataset), flush=True)
+
+    test_loader = DataLoader(
+        data,
+        sampler=EnvSampler(-1, args.batch_size, test_env,
+                           data.envs[test_env]['idx_list']),
+        num_workers=10)
+
+    test_res = test_loop(test_loader, model, args,
+                         att_idx_dict=data.test_att_idx_dict)
+
+    if 'avg_acc' not in test_res:
+        print('Test results: '
+              f'{colored("acc", "yellow")} {test_res["acc"]:.4f} '
+              f'{colored("loss", "blue")} {test_res["loss"]:.4f} ')
+    else:
+        print('Test results: '
+              f'{colored("worst acc", "yellow")} {test_res["acc"]:.4f} '
+              f'{colored("avg acc", "yellow")} {test_res["acc"]:.4f} '
+              f'{colored("loss", "blue")} {test_res["loss"]:.4f} ')
+        
+def save_test_model(model, args, data_path, save_path):
+    print()
+    print("{} Saving test result on the testdataset for {}".format(
+        datetime.now().strftime('%02y/%02m/%02d %H:%M:%S'),
+        args.dataset), flush=True)
+    file_names = os.listdir(data_path)
+    model['ebd'].eval()
+    model['clf'].eval()
+    text = ''
+    device = torch.device(f'cuda:{args.cuda}') 
+    sorted_files = sorted(file_names, key=lambda x: int(x.split('.')[0]))
+    for f in sorted_files:
+        print(f)
+        x = np.load(data_path+f)
+        x = torch.tensor(x).to(device) # 10 28 28
+        x = torch.unsqueeze(x, dim=0) # 1 10 28 28
+        x = model['ebd'](x)
+        y_hat = model['clf'](x, return_pred=True)
+        y_pred = torch.argmax(y_hat, dim=1)
+        text = text + f'{f} {str(y_pred.item())}\n'
+
+    with open(save_path + "a.txt", "w") as file:
+        file.write(text)
+
