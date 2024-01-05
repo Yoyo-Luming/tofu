@@ -280,7 +280,6 @@ def save_test_model(model, args, data_path, save_path):
     device = torch.device(f'cuda:{args.cuda}') 
     sorted_files = sorted(file_names, key=lambda x: int(x.split('.')[0]))
     for f in sorted_files:
-        print(f)
         x = np.load(data_path+f)
         x = torch.tensor(x).to(device) # 10 28 28
         x = torch.unsqueeze(x, dim=0) # 1 10 28 28
