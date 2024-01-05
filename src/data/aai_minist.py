@@ -17,34 +17,39 @@ class AAIMNIST(Dataset):
         self.data = {
             'train': self.load_data(file_path=file_path, mode='train',
                                     label_to_y=self.label_to_y),
-            'val': self.load_data(file_path=file_path, mode='val',
-                                   label_to_y=self.label_to_y),
-            'test': self.load_test_data(label_to_y=self.label_to_y
-                                   ),                       
+            'test1': self.load_data(file_path=file_path, mode='val',
+                                   label_to_y=self.label_to_y), # 提供的验证集当作测试集
+            'test2': self.load_mnist_test_data(label_to_y=self.label_to_y
+                                   ), # Mnist 数据集的测试集
+            'test': self.load_test_data(file_path=file_path, mode='test',) #需要保存测试结果的测试集，没有label，为了统一设置label都为0
         }
 
         # define the training, val and testing environments
         self.envs = []
 
-        # use the first half for train env 0
+        # use the first 40% for train env 0
         self.envs.append(self.create_env(
             data=self.data['train'],  start_ratio=0, end_ratio=0.4))
 
-        # use the second half for train env 1
+        # use the next 40% for train env 1
         self.envs.append(self.create_env(
             data=self.data['train'], start_ratio=0.4, end_ratio=0.8))
 
-        # use the first half for val env
+        # use the last 20% for val env
         self.envs.append(self.create_env(
             data=self.data['train'], start_ratio=0.8, end_ratio=1))
         
-        # use the second half for test env
+        # 使用提供的验证集当作测试集
         self.envs.append(self.create_env(
-            data=self.data['test'], start_ratio=0, end_ratio=1, mode='test'))
+            data=self.data['test1'], start_ratio=0, end_ratio=1))
 
-        # use the second half for test env
-        # self.envs.append(self.create_env(
-        #     data=self.data['test'], start_ratio=0, end_ratio=1))
+        # 使用Mnist 数据集的测试集当作测试集，需要我们手动添加颜色
+        self.envs.append(self.create_env(
+            data=self.data['test2'], start_ratio=0, end_ratio=1, add_color=True))
+
+        # 需要保存测试结果的测试集
+        self.envs.append(self.create_env(
+            data=self.data['test'], start_ratio=0, end_ratio=1))
 
         self.length = sum([len(env['idx_list']) for env in self.envs])
 
@@ -89,20 +94,23 @@ class AAIMNIST(Dataset):
 
         return y_to_c, max_c, label_to_y
     
-    # def load_test_data(self, file_path, mode):
-    #     data_path = file_path + '/' + mode + '/'
-    #     file_names = os.listdir(data_path)
+    def load_test_data(self, file_path, mode):
+        data_path = file_path + '/' + mode + '/'
+        file_names = os.listdir(data_path)
 
-    #     data = []
+        data = defaultdict(list)
 
-    #     for f in file_names:
-    #         x = np.load(data_path+f)
-    #         x = torch.tensor(x)
-    #         data.append(x)
+        for f in file_names:
+            x = np.load(data_path+f)
+            x = torch.tensor(x)
+            data[0].append(x)
         
-    #     return data
+        for k, v in data.items():
+            data[k] = torch.stack(v, dim=0)
 
-    def load_test_data(self, label_to_y):
+        return data
+
+    def load_mnist_test_data(self, label_to_y):
         mnist = datasets.MNIST('/root/oyxd/AAI/tofu/datasets/mnist', train=False, download=True)
 
         data = defaultdict(list)
@@ -116,10 +124,7 @@ class AAIMNIST(Dataset):
         for k, v in data.items():
             random.shuffle(v)
             data[k] = torch.stack(v, dim=0)
-        shapes = [np.shape(value) for values in data.values() for value in values]
 
-        print('len', len(shapes))  # 输出: [(2, 3), (4,), (2,)]
-        # print(data.size())
         return data
 
     def load_data(self, file_path, mode, label_to_y):
@@ -146,13 +151,12 @@ class AAIMNIST(Dataset):
         return data
 
 
-    def create_env(self, data, start_ratio, end_ratio, mode="train"):
+    def create_env(self, data, start_ratio, end_ratio, add_color=False):
         '''
             Create an environment using data from the start_ratio to the end_ratio
         '''
         images = []
         labels = []
-
         for cur_label, cur_images in data.items():
             start = int(start_ratio * len(cur_images))
             end = int(end_ratio * len(cur_images))
@@ -163,7 +167,7 @@ class AAIMNIST(Dataset):
         images = torch.cat(images, dim=0)
         labels = torch.cat(labels, dim=0)
         
-        if mode == "test":
+        if add_color:
             return self.make_test_environment(images, labels, 0.9)
         else:
             return self.make_environment(images, labels)
@@ -199,10 +203,7 @@ class AAIMNIST(Dataset):
             https://github.com/facebookresearch/InvariantRiskMinimization
         '''
         # different from the IRM repo, here the labels are already binarized
-        print('init',len(images), images.shape)
         images = images.reshape((-1, 28, 28))
-        print('reshape',len(images))
-
 
         # change label with prob 0.25
         n_labels = len(torch.unique(labels))
@@ -227,9 +228,6 @@ class AAIMNIST(Dataset):
         output_images = torch.zeros((len(images), self.max_c, 28, 28))
 
         idx_dict = defaultdict(list)
-        print('image',images.shape)
-        print("label", labels.shape)
-        print(len(images))
         for i in range(len(images)):
             idx_dict[int(labels[i])].append(i)
             output_images[i, self.y_to_c[color[i].item()], :, :] = images[i]

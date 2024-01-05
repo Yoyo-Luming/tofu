@@ -213,8 +213,8 @@ def train_target_model(data, model, partition_model, opt, args):
         model[k].load_state_dict(best_model[k])
 
 
-def evaluate_target_model(data, model, args):
-    test_env = 3
+def evaluate_target_model(data, model, args, test_env_id):
+    test_env = test_env_id
 
     print()
     print("{} Evaluating on the test environment for {}".format(

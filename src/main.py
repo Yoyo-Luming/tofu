@@ -177,5 +177,17 @@ if __name__ == '__main__':
         tar_data, model, partition_model, opt, args
     )
 
-    # evaluate the robust performance on the test data
-    tofu.evaluate_target_model(tar_data, model, args)
+    # save model
+    model_name = "tofu+CNN"
+    save_path = './save' + model_name +'.pth'
+    torch.save(model, save_path)
+
+    # evaluate the robust performance on the test1 data
+    tofu.evaluate_target_model(tar_data, model, args, test_env_id=3)
+
+    # evaluate the robust performance on the test2 data
+    tofu.evaluate_target_model(tar_data, model, args, test_env_id=4)
+    
+    
+    tofu.evaluate_model(tar_data, model, args)
+
