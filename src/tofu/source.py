@@ -247,6 +247,12 @@ def get_partition_loaders(train_data, pretrain_res, args):
 
     return train_partition_loaders, val_partition_loaders
 
+def train_direct(data, args, train_env_id=5, val_env_id=2):
+    return train_env_specific_model(data=data, 
+                             train_env_id=train_env_id, 
+                             val_env_id=val_env_id,
+                             args=args)
+
 
 def contrast_source_envs(data, model, opt, args):
     '''

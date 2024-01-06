@@ -114,6 +114,38 @@ if __name__ == '__main__':
         tofu.save_test_model(model, args, data_path, save_path)
         exit(0)
 
+    use_tofu = False
+    if not use_tofu:
+        print("Train model direct, don't use tofu!")
+        device = torch.device(f'cuda:{args.cuda}') 
+        model_name = "resnet"
+        save_path = './save/' + model_name + '/'
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+
+        args.dataset = args.tar_dataset
+
+        tar_data = get_dataset(args.dataset, is_target=True)
+
+        model = tofu.train_direct(data=tar_data, args=args, )
+        torch.save(model['ebd'], save_path + model_name +'_ebd.pth')
+        torch.save(model['clf'], save_path + model_name +'_clf.pth')
+
+        # evaluate the robust performance on the test1 data, env=3
+        acc1 = tofu.evaluate_target_model(tar_data, model, args, test_env_id=3)
+
+        # evaluate the robust performance on the test2 data, env=4
+        acc2 = tofu.evaluate_target_model(tar_data, model, args, test_env_id=4)
+        
+        # 保存测试结果
+        with open(save_path + "result.txt", "w") as file:
+            file.write(f"test1 acc{acc1:.4f} test2 acc{acc2:.4f}")
+            
+        data_path = './datasets/mnist/MNIST/processed_data/test/'
+        tofu.save_test_model(model, args, data_path, save_path)
+        exit(0)
+
+
     #################################################################
     #
     # Step 1: Identify spurious correlations from the source tasks

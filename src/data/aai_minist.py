@@ -35,21 +35,21 @@ class AAIMNIST(Dataset):
         self.envs.append(self.create_env(
             data=self.data['train'], start_ratio=0.4, end_ratio=0.8))
 
-        # use the last 20% for val env
+        # use the last 20% for val env 2
         self.envs.append(self.create_env(
             data=self.data['train'], start_ratio=0.8, end_ratio=1))
-        
-        # 使用提供的验证集当作测试集
+         
+        # 使用提供的验证集当作测试集 3
         self.envs.append(self.create_env(
             data=self.data['test1'], start_ratio=0, end_ratio=1))
 
-        # 使用Mnist 数据集的测试集当作测试集，需要我们手动添加颜色
+        # 使用Mnist 数据集的测试集当作测试集，需要我们手动添加颜色 4
         self.envs.append(self.create_env(
             data=self.data['test2'], start_ratio=0, end_ratio=1, add_color=True))
 
-        # 需要保存测试结果的测试集
-        # self.envs.append(self.create_env(
-        #     data=self.data['test'], start_ratio=0, end_ratio=1))
+        # 需要训练的所有数据集，不使用tofu时使用 5
+        self.envs.append(self.create_env(
+            data=self.data['train'],  start_ratio=0, end_ratio=0.8))
 
         self.length = sum([len(env['idx_list']) for env in self.envs])
 
