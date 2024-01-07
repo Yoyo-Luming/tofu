@@ -6,6 +6,7 @@ import random
 
 import torch
 import numpy as np
+import pandas as pd
 
 from data import get_dataset, is_textdata
 from model import get_model
@@ -26,6 +27,7 @@ def get_parser():
 
     # model
     parser.add_argument('--hidden_dim', type=int, default=300)
+    parser.add_argument('--model_name', type=str, default='CNN')
 
     #dataset
     parser.add_argument('--src_dataset', type=str, default='')
@@ -96,15 +98,21 @@ if __name__ == '__main__':
 
     print_args(args)
 
+    use_tofu = True
+    # save path 
+    if use_tofu:
+        model_name = f"tofu+{args.model_name}"
+    else:
+        model_name = f"{args.model_name}"
+    save_path = './save/' + model_name + '/'
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+
     load_model = False
     if load_model:
         print("load model")
         # load model
         device = torch.device(f'cuda:{args.cuda}') 
-        model_name = "tofu+CNN"
-        save_path = './save/' + model_name + '/'
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
         model = {}
         model['ebd'] = torch.load(save_path + model_name +'_ebd.pth').to(device)
         model['clf'] = torch.load(save_path + model_name +'_clf.pth').to(device)
@@ -114,20 +122,18 @@ if __name__ == '__main__':
         tofu.save_test_model(model, args, data_path, save_path)
         exit(0)
 
-    use_tofu = False
     if not use_tofu:
-        print("Train model direct, don't use tofu!")
+        print(f"Train model {args.model_name} direct, don't use tofu!")
         device = torch.device(f'cuda:{args.cuda}') 
-        model_name = "resnet"
-        save_path = './save/' + model_name + '/'
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
-
         args.dataset = args.tar_dataset
 
         tar_data = get_dataset(args.dataset, is_target=True)
 
-        model = tofu.train_direct(data=tar_data, args=args, )
+        model, train_res_list, val_res_list = tofu.train_direct(data=tar_data, args=args, )
+        train_res_df = pd.DataFrame(train_res_list)
+        train_res_df.to_csv(save_path+"train_res.csv")
+        val_res_df = pd.DataFrame(val_res_list)
+        val_res_df.to_csv(save_path+"val_res.csv")
         torch.save(model['ebd'], save_path + model_name +'_ebd.pth')
         torch.save(model['clf'], save_path + model_name +'_clf.pth')
 
@@ -139,7 +145,7 @@ if __name__ == '__main__':
         
         # 保存测试结果
         with open(save_path + "result.txt", "w") as file:
-            file.write(f"test1 acc{acc1:.4f} test2 acc{acc2:.4f}")
+            file.write(f"test1 acc {acc1:.4f} test2 acc {acc2:.4f}")
             
         data_path = './datasets/mnist/MNIST/processed_data/test/'
         tofu.save_test_model(model, args, data_path, save_path)
@@ -178,8 +184,13 @@ if __name__ == '__main__':
         # contrast different source environments
         # save the partition results on the source task for learning the
         # unstable feature space
-        cur_train_partition_loaders, cur_val_partition_loaders = \
+        cur_train_partition_loaders, cur_val_partition_loaders, train_res_list, val_res_list = \
             tofu.contrast_source_envs(src_data, model, opt, args)
+
+        train_res_df = pd.DataFrame(train_res_list)
+        train_res_df.to_csv(save_path+"source_train_res.csv")
+        val_res_df = pd.DataFrame(val_res_list)
+        val_res_df.to_csv(save_path+"source_val_res.csv")
 
         train_partition_loaders.extend(cur_train_partition_loaders)
         val_partition_loaders.extend(cur_val_partition_loaders)
@@ -223,15 +234,14 @@ if __name__ == '__main__':
     if args.transfer_ebd:
         model['ebd'].load_state_dict(best_model_ebd)
 
-    tofu.train_target_model(
+    train_res_list, val_res_list = tofu.train_target_model(
         tar_data, model, partition_model, opt, args
     )
+    train_res_df = pd.DataFrame(train_res_list)
+    train_res_df.to_csv(save_path+"target_train_res.csv")
+    val_res_df = pd.DataFrame(val_res_list)
+    val_res_df.to_csv(save_path+"target_val_res.csv")
 
-    # save model
-    model_name = "tofu+resnet"
-    save_path = './save/' + model_name + '/'
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
     torch.save(model['ebd'], save_path + model_name +'_ebd.pth')
     torch.save(model['clf'], save_path + model_name +'_clf.pth')
 
@@ -243,7 +253,7 @@ if __name__ == '__main__':
     
     # 保存测试结果
     with open(save_path + "result.txt", "w") as file:
-        file.write(f"test1 acc{acc1:.4f} test2 acc{acc2:.4f}")
+        file.write(f"test1 acc {acc1:.4f} test2 acc {acc2:.4f}")
         
     data_path = './datasets/mnist/MNIST/processed_data/test/'
     tofu.save_test_model(model, args, data_path, save_path)

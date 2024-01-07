@@ -178,6 +178,8 @@ def train_target_model(data, model, partition_model, opt, args):
     best_val_res = None
     best_model = {}
     cycle = 0
+    train_res_list = []
+    val_res_list = []
     for ep in range(args.num_epochs):
         train_res = train_dro_loop(train_loaders, model, opt, ep, args)
 
@@ -193,6 +195,8 @@ def train_target_model(data, model, partition_model, opt, args):
             val_res['acc'] = min(val_res['acc'])
             val_res['loss'] = max(val_res['loss'])
 
+        train_res_list.append(train_res)
+        val_res_list.append(val_res)
         print_res(train_res, val_res, ep)
 
         if min(train_res['worst_acc'], val_res['acc']) > best_acc:
@@ -212,7 +216,8 @@ def train_target_model(data, model, partition_model, opt, args):
     # load best model
     for k in 'ebd', 'clf':
         model[k].load_state_dict(best_model[k])
-
+        
+    return train_res_list, val_res_list
 
 def evaluate_target_model(data, model, args, test_env_id):
     test_env = test_env_id

@@ -20,10 +20,12 @@ def get_model(args, data=None):
             model['ebd'] = CNN(include_fc=True, hidden_dim=args.hidden_dim).cuda()
         else:
             _, _, _, max_c = args.dataset.split('_')
-            # model['ebd'] = CNN(include_fc=True,
-            #                    hidden_dim=args.hidden_dim,
-            #                    input_channels=int(max_c)).cuda()
-            model['ebd'] = Resnet50().cuda()
+            if args.model_name == "CNN":
+                model['ebd'] = CNN(include_fc=True,
+                                hidden_dim=args.hidden_dim,
+                                input_channels=int(max_c)).cuda()
+            else:
+                model['ebd'] = Resnet50().cuda()
         out_dim=args.hidden_dim
         num_classes = 10
 

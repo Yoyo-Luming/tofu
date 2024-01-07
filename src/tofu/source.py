@@ -85,7 +85,8 @@ def train_env_specific_model(data, train_env_id, val_env_id, args):
     best_acc = -1
     best_model = {}
     cycle = 0
-
+    train_res_list = []
+    val_res_list = []
     # start training the env specific model
     for ep in range(args.num_epochs):
         train_res = train_loop(train_loader, cur_model, cur_opt, ep, args)
@@ -93,7 +94,8 @@ def train_env_specific_model(data, train_env_id, val_env_id, args):
         with torch.no_grad():
             # evaluate on the other training environment
             val_res = test_loop(val_loader, cur_model, ep, args)
-
+        train_res_list.append(train_res)
+        val_res_list.append(val_res)
         print_pretrain_res(train_res, val_res, ep, train_env_id)
 
         if val_res['acc'] > best_acc:
@@ -112,7 +114,7 @@ def train_env_specific_model(data, train_env_id, val_env_id, args):
     for k in 'ebd', 'clf':
         cur_model[k].load_state_dict(best_model[k])
 
-    return cur_model
+    return cur_model, train_res_list, val_res_list
 
 
 def train_robust_source_model(data, pretrain_res, model, opt, args):
@@ -149,13 +151,16 @@ def train_robust_source_model(data, pretrain_res, model, opt, args):
     best_val_res = None
     best_model = {}
     cycle = 0
+    train_res_list = []
+    val_res_list = []
     for ep in range(args.num_epochs):
         train_res = train_dro_loop(train_loaders, model, opt, ep, args)
 
         with torch.no_grad():
             # validation
             val_res = test_loop(val_loader, model, ep, args)
-
+        train_res_list.append(train_res)
+        val_res_list.append(({"acc": val_res["acc"], "loss": val_res["loss"]}))
         print_res(train_res, val_res, ep)
 
         if min(train_res['worst_acc'], val_res['acc']) > best_acc:
@@ -179,6 +184,7 @@ def train_robust_source_model(data, pretrain_res, model, opt, args):
 
     print(datetime.now().strftime('%02y/%02m/%02d %H:%M:%S') +
           f" Finished DRO on the source task", flush=True)
+    return train_res_list, val_res_list
 
 
 def get_partition_loaders(train_data, pretrain_res, args):
@@ -269,12 +275,14 @@ def contrast_source_envs(data, model, opt, args):
         rest.remove(env_id)
         val_env_id = random.choice(rest)
 
-        models.append(train_env_specific_model(
+        cur_model,_,_ = train_env_specific_model(
             data=data,
             train_env_id=env_id,
             val_env_id=val_env_id,
             args=args
-        ))
+        )
+
+        models.append(cur_model)
 
     # load the training environments in inference loaders
     train_loaders = []
@@ -295,7 +303,8 @@ def contrast_source_envs(data, model, opt, args):
                 test_loop(train_loaders[i], models[j], args, True)
             )
 
-    train_robust_source_model(data, pretrain_res, model, opt, args)
+    train_res_list, test_res_list = train_robust_source_model(data, pretrain_res, model, opt, args)
 
-    return get_partition_loaders(data, pretrain_res, args)
+    train_partition_loaders, val_partition_loaders = get_partition_loaders(data, pretrain_res, args)
+    return train_partition_loaders, val_partition_loaders, train_res_list, test_res_list
 
