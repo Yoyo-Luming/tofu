@@ -19,5 +19,6 @@ unzip data in `datasets/mnist/MNIST/processed_data`
 + `sh bin/aai_mnist.sh` 
 
 **Save model**
+
 In save floder
 
