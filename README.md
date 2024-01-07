@@ -20,5 +20,6 @@ unzip data in `datasets/mnist/MNIST/processed_data`
 
 **Save model**
 
-In save floder
+In `./save`
+
 
