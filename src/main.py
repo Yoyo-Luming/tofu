@@ -101,7 +101,7 @@ if __name__ == '__main__':
     use_tofu = True
     # save path 
     if use_tofu:
-        model_name = f"tofu+{args.model_name}"
+        model_name = f"tofu+{args.model_name}2"
     else:
         model_name = f"{args.model_name}"
     save_path = './save/' + model_name + '/'
@@ -257,4 +257,7 @@ if __name__ == '__main__':
         
     data_path = './datasets/mnist/MNIST/processed_data/test/'
     tofu.save_test_model(model, args, data_path, save_path)
+
+    print()
+    print(datetime.now().strftime('%02y/%02m/%02d %H:%M:%S') + 'Done!')
 

@@ -25,7 +25,7 @@ def get_model(args, data=None):
                                 hidden_dim=args.hidden_dim,
                                 input_channels=int(max_c)).cuda()
             else:
-                model['ebd'] = Resnet50().cuda()
+                model['ebd'] = Resnet50(hidden_dim=args.hidden_dim).cuda()
         out_dim=args.hidden_dim
         num_classes = 10
 

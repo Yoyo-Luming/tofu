@@ -5,7 +5,7 @@ from torchvision.models import resnet50, ResNet50_Weights
 
 
 class Resnet50(nn.Module):
-    def __init__(self):
+    def __init__(self,hidden_dim=300):
         super(Resnet50, self).__init__()
 
         resnet = resnet50()
@@ -17,7 +17,7 @@ class Resnet50(nn.Module):
         self.main = nn.Sequential(*modules)
         # take the last layer representation from the resnet
         self.out_dim = resnet.fc.in_features
-        self.fc = nn.Linear(2048, 300)
+        self.fc = nn.Linear(2048, hidden_dim)
         
 
     def forward(self, x):

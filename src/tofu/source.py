@@ -95,7 +95,7 @@ def train_env_specific_model(data, train_env_id, val_env_id, args):
             # evaluate on the other training environment
             val_res = test_loop(val_loader, cur_model, ep, args)
         train_res_list.append(train_res)
-        val_res_list.append(val_res)
+        val_res_list.append(({"acc": val_res["acc"], "loss": val_res["loss"]}))
         print_pretrain_res(train_res, val_res, ep, train_env_id)
 
         if val_res['acc'] > best_acc:
